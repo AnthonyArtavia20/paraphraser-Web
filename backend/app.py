@@ -1,22 +1,23 @@
-import random
-import re
 from flask import Flask, request, jsonify
-from textblob import TextBlob, download_corpora
-from nltk.corpus import wordnet
+from textblob import TextBlob
+from textblob import download_corpora
 from flask_cors import CORS
 import nltk
 import os
 
-# Render usa este path para nltk
+# Forzar ruta donde nltk/textblob descarga los datos en Render
 nltk.data.path.append("/opt/render/nltk_data")
 
+# Inicializar Flask
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/')
+# Ruta principal (opcional)
+@app.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "Servidor Flask activo. Usa POST /paraphrase para parafrasear texto."})
 
+# Ruta de parafraseo
 @app.route('/paraphrase', methods=['POST'])
 def paraphrase():
     text = request.json.get('text')
@@ -25,51 +26,29 @@ def paraphrase():
     if len(text) > 1000:
         return jsonify({"error": "Texto demasiado largo (máx. 1000 caracteres)"}), 400
 
+    # Descargar datos requeridos por TextBlob
     download_corpora.download_all()
 
     try:
         blob = TextBlob(text)
-        paraphrased_parts = [
+        # Parafrasear cada oración con traducción ida y vuelta (ES → FR → ES)
+        paraphrased = " ".join([
             paraphrase_sentence(str(sentence))
             for sentence in blob.sentences
-        ]
-        paraphrased_text = " ".join(part["text"] for part in paraphrased_parts)
-        marked_text = " ".join(part["marked"] for part in paraphrased_parts)
-        return jsonify({
-            "result": paraphrased_text,
-            "highlighted": marked_text
-        })
+        ])
+        return jsonify({"result": paraphrased})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Función de parafraseo con traducción
 def paraphrase_sentence(sentence):
-    blob = TextBlob(sentence)
-    result = []
-    marked = []
+    try:
+        blob = TextBlob(sentence)
+        return str(blob.translate(to="fr").translate(to="es"))
+    except Exception:
+        return sentence  # Si falla, devuelve la oración original
 
-    for word in blob.words:
-        if wordnet.synsets(word):
-            synonyms = [
-                lemma.name().replace("_", " ")
-                for syn in wordnet.synsets(word)
-                for lemma in syn.lemmas()
-                if re.match("^[a-zA-ZáéíóúñÁÉÍÓÚÑ]+$", lemma.name())
-            ]
-            if synonyms:
-                chosen = random.choice(synonyms)
-                if chosen.lower() != word.lower():
-                    result.append(chosen)
-                    marked.append(f"<mark>{chosen}</mark>")
-                    continue
-
-        result.append(word)
-        marked.append(word)
-
-    return {
-        "text": " ".join(result),
-        "marked": " ".join(marked)
-    }
-
+# Configuración del puerto (para Render)
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
