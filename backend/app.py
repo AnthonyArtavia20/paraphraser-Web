@@ -5,6 +5,15 @@ from nltk.corpus import wordnet
 import random
 from flask_cors import CORS  # Para evitar errores CORS
 
+import nltk
+
+# Forzar descarga de corpus si falta
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('brown')
+
+
 app = Flask(__name__)
 CORS(app)  # Permite peticiones desde Netlify
 
