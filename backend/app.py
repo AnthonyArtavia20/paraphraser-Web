@@ -1,19 +1,15 @@
 # app.py (Backend en Flask)
 from flask import Flask, request, jsonify, make_response
 from textblob import TextBlob
+from textblob import download_corpora
 from nltk.corpus import wordnet
 import random
-from flask_cors import CORS  # Para evitar errores CORS
-
+from flask_cors import CORS
 import nltk
+import os
+
+# Asegurar ruta para nltk
 nltk.data.path.append("/opt/render/nltk_data")
-
-# Forzar descarga de corpus si falta
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('brown')
-
 
 app = Flask(__name__)
 CORS(app)  # Permite peticiones desde Netlify
@@ -21,14 +17,11 @@ CORS(app)  # Permite peticiones desde Netlify
 @app.route('/paraphrase', methods=['POST'])
 def paraphrase():
     text = request.json.get('text')
-    if len(text) > 1000:  # Limita a 1000 caracteres
+    if len(text) > 1000:
         return jsonify({"error": "Texto demasiado largo (máx. 1000 caracteres)"}), 400
 
-    # Descarga los corpora necesarios si no están
-    nltk.download('punkt', download_dir="/opt/render/nltk_data", quiet=True)
-    nltk.download('wordnet', download_dir="/opt/render/nltk_data", quiet=True)
-    nltk.download('averaged_perceptron_tagger', download_dir="/opt/render/nltk_data", quiet=True)
-    nltk.download('brown', download_dir="/opt/render/nltk_data", quiet=True)
+    # Descargar los corpora necesarios directamente desde TextBlob
+    download_corpora.download_all()
 
     try:
         blob = TextBlob(text)
@@ -49,7 +42,10 @@ def paraphrase_sentence(sentence):
         for word in blob.words
     ])
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({"message": "Servidor Flask activo. Usa POST /paraphrase para parafrasear texto."})
+
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get("PORT",5000))
-    app.run(host="0.0.0.0", port=port) # Para que Flask se ejecute en 0.0.0.0 y que use el puerto que REnder asigna dinámicamente usando os.environ.get("PORT")
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
