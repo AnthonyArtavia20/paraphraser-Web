@@ -6,6 +6,7 @@ import random
 from flask_cors import CORS  # Para evitar errores CORS
 
 import nltk
+nltk.data.path.append("/opt/render/nltk_data")
 
 # Forzar descarga de corpus si falta
 nltk.download('punkt')
@@ -24,10 +25,10 @@ def paraphrase():
         return jsonify({"error": "Texto demasiado largo (máx. 1000 caracteres)"}), 400
 
     # Descarga los corpora necesarios si no están
-    nltk.download('punkt', quiet=True)
-    nltk.download('wordnet', quiet=True)
-    nltk.download('averaged_perceptron_tagger', quiet=True)
-    nltk.download('brown', quiet=True)
+    nltk.download('punkt', download_dir="/opt/render/nltk_data", quiet=True)
+    nltk.download('wordnet', download_dir="/opt/render/nltk_data", quiet=True)
+    nltk.download('averaged_perceptron_tagger', download_dir="/opt/render/nltk_data", quiet=True)
+    nltk.download('brown', download_dir="/opt/render/nltk_data", quiet=True)
 
     try:
         blob = TextBlob(text)
