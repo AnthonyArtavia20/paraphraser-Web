@@ -1,18 +1,19 @@
+import random
+import re
 from flask import Flask, request, jsonify
-from textblob import TextBlob
-from textblob import download_corpora
+from textblob import TextBlob, download_corpora
+from nltk.corpus import wordnet
 from flask_cors import CORS
 import nltk
 import os
 
-# Forzar ruta NLTK en Render
+# Render usa este path para nltk
 nltk.data.path.append("/opt/render/nltk_data")
 
-# Flask app
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def home():
     return jsonify({"message": "Servidor Flask activo. Usa POST /paraphrase para parafrasear texto."})
 
@@ -24,31 +25,50 @@ def paraphrase():
     if len(text) > 1000:
         return jsonify({"error": "Texto demasiado largo (máx. 1000 caracteres)"}), 400
 
-    # Descargar recursos
     download_corpora.download_all()
 
     try:
         blob = TextBlob(text)
-        # Parafraseo encadenado: Español → Francés → Alemán → Español
-        paraphrased = " ".join([
+        paraphrased_parts = [
             paraphrase_sentence(str(sentence))
             for sentence in blob.sentences
-        ])
-        return jsonify({"result": paraphrased})
+        ]
+        paraphrased_text = " ".join(part["text"] for part in paraphrased_parts)
+        marked_text = " ".join(part["marked"] for part in paraphrased_parts)
+        return jsonify({
+            "result": paraphrased_text,
+            "highlighted": marked_text
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 def paraphrase_sentence(sentence):
-    try:
-        blob = TextBlob(sentence)
-        return str(
-            blob
-            .translate(to="fr")
-            .translate(to="de")
-            .translate(to="es")
-        )
-    except Exception:
-        return sentence
+    blob = TextBlob(sentence)
+    result = []
+    marked = []
+
+    for word in blob.words:
+        if wordnet.synsets(word):
+            synonyms = [
+                lemma.name().replace("_", " ")
+                for syn in wordnet.synsets(word)
+                for lemma in syn.lemmas()
+                if re.match("^[a-zA-ZáéíóúñÁÉÍÓÚÑ]+$", lemma.name())
+            ]
+            if synonyms:
+                chosen = random.choice(synonyms)
+                if chosen.lower() != word.lower():
+                    result.append(chosen)
+                    marked.append(f"<mark>{chosen}</mark>")
+                    continue
+
+        result.append(word)
+        marked.append(word)
+
+    return {
+        "text": " ".join(result),
+        "marked": " ".join(marked)
+    }
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
