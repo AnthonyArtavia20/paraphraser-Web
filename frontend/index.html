@@ -37,7 +37,7 @@
             resultado.innerText = "Procesando...";
 
             try {
-                const response = await fetch("https://paraphraser-web.onrender.com/", {
+                const response = await fetch("https://paraphraser-web.onrender.com/paraphrase", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ text: text })
