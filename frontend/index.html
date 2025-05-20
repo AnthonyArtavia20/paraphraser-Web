@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parafraseador de Párrafos</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        textarea { width: 100%; height: 200px; margin: 10px 0; }
+        button { background: #007BFF; color: white; border: none; padding: 10px 20px; }
+        #resultado { margin-top: 20px; white-space: pre-line; }
+        #contador { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Parafraseador</h1>
+    <textarea
+        id="texto"
+        placeholder="Escribe tu párrafo aquí (máx. 1000 caracteres)..."
+        maxlength="1000"
+    ></textarea>
+    <div id="contador">0/1000 caracteres</div>
+    <button onclick="paraphrase()">Parafrasear</button>
+    <div id="resultado"></div>
+
+    <script>
+        const textarea = document.getElementById("texto");
+        const contador = document.getElementById("contador");
+
+        textarea.addEventListener("input", () => {
+            contador.innerText = `${textarea.value.length}/1000 caracteres`;
+        });
+
+        async function paraphrase() {
+            const text = textarea.value;
+            if (!text.trim()) return alert("¡Escribe algo primero!");
+
+            const resultado = document.getElementById("resultado");
+            resultado.innerText = "Procesando...";
+
+            try {
+                const response = await fetch("https://tuparafraseador.onrender.com/paraphrase", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                resultado.innerText = data.result || data.error;
+            } catch (error) {
+                resultado.innerText = "Error al conectar con el servidor. Intenta más tarde.";
+            }
+        }
+    </script>
+</body>
+</html>

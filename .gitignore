@@ -1,0 +1,16 @@
+# Ignorar entorno virtual
+backend/.venv/
+
+# Archivos de Python
+__pycache__/
+*.pyc
+
+# NLTK data
+nltk_data/
+
+# Archivos de sistema
+.DS_Store
+*.swp
+
+# Configuración local de VS Code
+.vscode/
