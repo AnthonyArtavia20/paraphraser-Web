@@ -23,6 +23,12 @@ def paraphrase():
     if len(text) > 1000:  # Limita a 1000 caracteres
         return jsonify({"error": "Texto demasiado largo (máx. 1000 caracteres)"}), 400
 
+    # Descarga los corpora necesarios si no están
+    nltk.download('punkt', quiet=True)
+    nltk.download('wordnet', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+    nltk.download('brown', quiet=True)
+
     try:
         blob = TextBlob(text)
         paraphrased = " ".join([
